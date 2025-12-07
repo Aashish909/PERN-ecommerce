@@ -571,10 +571,10 @@ export const updateStock = catchAsyncErrors(async (req, res, next) => {
 
 export const fetchCategories = catchAsyncErrors(async (req, res, next) => {
   const result = await database.query(
-    "SELECT DISTINCT category FROM products WHERE category IS NOT NULL"
+    "SELECT name FROM categories ORDER BY name ASC"
   );
 
-  const categories = result.rows.map((row) => row.category);
+  const categories = result.rows.map((row) => row.name);
 
   res.status(200).json({
     success: true,

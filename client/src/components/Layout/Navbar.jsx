@@ -45,7 +45,7 @@ const Navbar = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/v1/product/categories");
+        const response = await axiosInstance.get("/product/categories");
         if (response.data.success) {
           setCategories(response.data.categories);
         }
@@ -220,7 +220,7 @@ const Navbar = () => {
                   </Link>
                 ))}
                 <a
-                  href="http://localhost:5174/login"
+                  href="https://pern-ai-ecommerce-admin-dashboard.netlify.app/login"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors border-t border-gray-50 mt-1 pt-2"
@@ -237,7 +237,7 @@ const Navbar = () => {
               </button>
               <div className="absolute top-full left-0 w-48 bg-white shadow-xl rounded-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-2">
                 <Link to="/orders" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Orders</Link>
-                <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Profile</Link>
+                <button onClick={() => dispatch(toggleProfilePanel())} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Profile</button>
                 <Link to="/address" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Address</Link>
                 <Link to="/support" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Support tickets</Link>
                 <Link to="/wishlist" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Wishlist</Link>

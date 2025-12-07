@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { X, LogOut, Upload, Eye, EyeOff, User, Mail, Shield, Edit2, Save, XCircle } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -19,14 +19,32 @@ const ProfilePanel = () => {
     avatar: "",
   });
 
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const fileInputRef = useRef(null);
+
   useEffect(() => {
     if (authUser) {
       setFormData({
         name: authUser.name || "",
         email: authUser.email || "",
       });
+      setAvatarPreview(authUser.avatar?.url || null);
     }
   }, [authUser]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.readyState === 2) {
+          setAvatarPreview(reader.result);
+          setFormData({ ...formData, avatar: file }); // Store the file object, not the base64 string for upload if backend expects file
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const [isEditing, setIsEditing] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -81,9 +99,32 @@ const ProfilePanel = () => {
     e.preventDefault();
 
     // Update Profile
+    const updateData = new FormData();
+    // Only append if changed or if it's a file. 
+    // Logic: If name changed, append name. If avatar changed (it's a File object), append avatar.
+    let profileChanged = false;
+
     if (formData.name !== authUser.name) {
-      await dispatch(updateProfile({ name: formData.name, email: formData.email }));
+      updateData.append("name", formData.name);
+      profileChanged = true;
+    } else {
+      // Backend usually expects name/email even if unchanged if using `put` to replace resource, 
+      // OR we just send what changed. 
+      // Looking at backend controller: it updates name/email always. 
+      // So we should append name/email always if we are firing the request.
+      updateData.append("name", formData.name);
     }
+
+    updateData.append("email", formData.email); // Email is needed
+
+    if (formData.avatar && typeof formData.avatar === 'object') {
+      updateData.append("avatar", formData.avatar);
+      profileChanged = true;
+    }
+
+    // Only dispatch if something changed or if it's just name/email update which is always true because we set isEditing=true
+    await dispatch(updateProfile(updateData));
+
 
     // Update Password if provided
     if (currentPassword && newPassword) {
@@ -141,13 +182,32 @@ const ProfilePanel = () => {
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="mb-8 flex flex-col items-center">
-              <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 text-primary overflow-hidden">
-                {authUser?.avatar?.url ? (
-                  <img src={authUser.avatar.url || "/avatar-holder.avif"} alt={authUser.name} className="h-full w-full object-cover" />
-                ) : (
-                  <User size={48} />
+              <div className="relative group cursor-pointer" onClick={() => isEditing && fileInputRef.current.click()}>
+                <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 text-primary overflow-hidden border-2 border-transparent group-hover:border-primary transition-colors">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Preview" className="h-full w-full object-cover" />
+                  ) : authUser?.avatar?.url ? (
+                    <img src={authUser.avatar.url || "/avatar-holder.avif"} alt={authUser.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <User size={48} />
+                  )}
+                </div>
+                {isEditing && (
+                  <div className="absolute bottom-4 right-0 p-1.5 bg-primary text-primary-foreground rounded-full shadow-lg transform translate-x-1/4 translate-y-1/4">
+                    <Upload size={14} />
+                  </div>
                 )}
               </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={!isEditing}
+              />
+
               <h3 className="text-xl font-bold">{authUser.name}</h3>
               <p className="text-muted-foreground">{authUser.email}</p>
               <div className="mt-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">

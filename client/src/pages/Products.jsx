@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, Sparkles, Star, Filter, X } from "lucide-react";
-import { categories } from "../data/products";
+// import { categories } from "../data/products";
 import ProductCard from "../components/Products/ProductCard";
 import Pagination from "../components/Products/Pagination";
 

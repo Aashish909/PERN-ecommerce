@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronRight, ChevronDown, Menu, Star, Check, Loader2 } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+// import axios from "axios";
 
 const FilterSection = ({ title, children, isOpen: defaultOpen = true }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -124,6 +124,8 @@ const DualRangeSlider = ({ min, max, onChange }) => {
   );
 };
 
+import { axiosInstance } from "../../lib/axios";
+
 const CategoriesSidebar = () => {
   const [priceRange, setPriceRange] = useState([0, 300]);
   const [categories, setCategories] = useState([]);
@@ -135,7 +137,7 @@ const CategoriesSidebar = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/v1/product/categories");
+        const response = await axiosInstance.get("/product/categories");
         if (response.data.success) {
           setCategories(response.data.categories);
         }
