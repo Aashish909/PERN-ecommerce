@@ -8,7 +8,7 @@ export const checkAuth = createAsyncThunk("auth/checkAuth", async (_, { rejectWi
     const response = await axiosInstance.get("/auth/me");
     return response.data;
   } catch (error) {
-    return rejectWithValue(error.response.data);
+    return rejectWithValue(error.response?.data || "An error occurred");
   }
 });
 

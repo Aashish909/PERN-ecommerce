@@ -10,7 +10,7 @@ import MegaMenu from "./MegaMenu";
 import FullScreenMenu from "./FullScreenMenu";
 import { useState, useRef, useEffect } from "react";
 import LocationSelector from "./LocationSelector";
-import axios from "axios";
+import { axiosInstance } from "../../lib/axios";
 
 const categoryIcons = {
   "Fashion": Shirt,
