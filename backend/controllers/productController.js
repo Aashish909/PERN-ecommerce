@@ -301,14 +301,20 @@ export const postProductReview = catchAsyncErrors(async (req, res, next) => {
   if (!rating || !comment) {
     return next(new ErrorHandler("Please provide rating and comment.", 400));
   }
+  // Allow reviews if the user paid online OR if the order was Cash on Delivery (after delivery).
+  // This prevents blocking COD customers whose payment_status stays "Pending".
   const purchasheCheckQuery = `
     SELECT oi.product_id
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id
     JOIN payments p ON p.order_id = o.id
     WHERE o.buyer_id = $1
-    AND oi.product_id = $2
-    AND p.payment_status = 'Paid'
+      AND oi.product_id = $2
+      AND (
+        p.payment_status = 'Paid'
+        OR p.payment_type = 'Cash on Delivery'
+        OR o.order_status = 'Delivered'
+      )
     LIMIT 1 
   `;
 
@@ -529,18 +535,39 @@ export const fetchAIFilteredProducts = catchAsyncErrors(
       });
     }
 
-    // STEP 2: AI FILTERING
-    const { success, products } = await getAIRecommendation(
-      req,
-      res,
+    // STEP 2: AI FILTERING (with fallback to SQL results)
+    const aiResult = await getAIRecommendation(
       userPrompt,
       filteredProducts
     );
 
-    res.status(200).json({
-      success: success,
-      message: "AI filtered products.",
-      products,
+    // If AI fails (quota exceeded, API error, etc.), fallback to SQL-filtered results
+    if (!aiResult.success && aiResult.fallback) {
+      console.warn("AI filtering unavailable, using SQL-filtered results:", aiResult.error);
+      return res.status(200).json({
+        success: true,
+        message: aiResult.error || "Using filtered search results.",
+        products: filteredProducts,
+        aiFiltered: false,
+      });
+    }
+
+    // If AI succeeds, return AI-filtered products
+    if (aiResult.success) {
+      return res.status(200).json({
+        success: true,
+        message: "AI filtered products.",
+        products: aiResult.products,
+        aiFiltered: true,
+      });
+    }
+
+    // If AI fails without fallback flag, still return SQL results
+    return res.status(200).json({
+      success: true,
+      message: aiResult.error || "Using filtered search results.",
+      products: filteredProducts,
+      aiFiltered: false,
     });
   }
 );

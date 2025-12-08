@@ -39,6 +39,12 @@ export const fetchAIFilteredProducts = createAsyncThunk(
   async (query, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post("/product/ai-search", { userPrompt: query });
+      
+      // Show info message if AI filtering was unavailable (fallback to SQL search)
+      if (response.data.success && !response.data.aiFiltered && response.data.message) {
+        toast.info(response.data.message || "Using filtered search results");
+      }
+      
       return response.data;
     } catch (error) {
       // Handle case where backend function might be commented out
@@ -48,9 +54,16 @@ export const fetchAIFilteredProducts = createAsyncThunk(
         const fallbackResponse = await axiosInstance.get(`/product/?search=${encodeURIComponent(query)}`);
         return fallbackResponse.data;
       } else {
-        toast.error(error.response?.data?.message || "AI Search failed");
+        // For other errors, try fallback to regular search
+        toast.warning("AI Search unavailable. Using regular search instead.");
+        try {
+          const fallbackResponse = await axiosInstance.get(`/product/?search=${encodeURIComponent(query)}`);
+          return fallbackResponse.data;
+        } catch (fallbackError) {
+          toast.error(error.response?.data?.message || "Search failed");
+          return rejectWithValue(error.response?.data || {});
+        }
       }
-      return rejectWithValue(error.response?.data || {});
     }
   }
 );
